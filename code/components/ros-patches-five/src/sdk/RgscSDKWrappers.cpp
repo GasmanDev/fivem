@@ -11,7 +11,7 @@
 #include <CoreConsole.h>
 #include <Error.h>
 
-HRESULT(__stdcall*g_origInitializeGraphics)(void*, void*, void*);
+HRESULT(__stdcall* g_origInitializeGraphics)(void*, void*, void*);
 
 static HANDLE g_uiEvent;
 
@@ -75,7 +75,6 @@ HRESULT __stdcall NullCopyBuffer(void* rgscUI, void* a1)
 
 class IRgscUi
 {
-
 };
 
 class IProfileV3
@@ -185,7 +184,6 @@ public:
 	TaskManagerStub(void* basePtr)
 		: m_baseRgsc((IRgscTaskManager*)basePtr)
 	{
-
 	}
 
 	virtual HRESULT QueryInterface(GUID* iid, void** out) override
@@ -221,15 +219,14 @@ public:
 	ProfileManagerStub(void* basePtr)
 		: m_baseRgsc((IRgscProfileManager*)basePtr)
 	{
-
 	}
 
-#define GENERIC_STUB(m) \
+#define GENERIC_STUB(m)                                                                            \
 	virtual void* m(void* a1, void* a2, void* a3, void* a4, void* a5, void* a6, void* a7) override \
-	{ \
-		LOG_CALL(); \
-		\
-		return m_baseRgsc->m(a1, a2, a3, a4, a5, a6, a7); \
+	{                                                                                              \
+		LOG_CALL();                                                                                \
+                                                                                                   \
+		return m_baseRgsc->m(a1, a2, a3, a4, a5, a6, a7);                                          \
 	}
 
 	virtual HRESULT QueryInterface(GUID* iid, void** out) override
@@ -248,7 +245,7 @@ public:
 
 	virtual bool isX() override
 	{
-		//return true;
+		// return true;
 		bool ov = m_baseRgsc->isX();
 
 #if defined(IS_RDR3)
@@ -261,14 +258,14 @@ public:
 	virtual bool isOnline() override
 	{
 		return true;
-		//return m_baseRgsc->isOnline();
-		//return true;
+		// return m_baseRgsc->isOnline();
+		// return true;
 	}
 
 	virtual int getProfileData(IProfileV3* profile) override
 	{
-		//m_baseRgsc->getProfileData(profile);
-		//profile->SetAccountId(0x000000000FABDF22);
+		// m_baseRgsc->getProfileData(profile);
+		// profile->SetAccountId(0x000000000FABDF22);
 		profile->SetAccountId(ROS_DUMMY_ACCOUNT_ID);
 		profile->SetEmail("onlineservices@fivem.net");
 		profile->SetBool1(false);
@@ -283,13 +280,13 @@ public:
 
 	virtual bool isZ() override
 	{
-		//return m_baseRgsc->isZ();
+		// return m_baseRgsc->isZ();
 		return true;
 	}
 
 	virtual bool is1() override
 	{
-		//return m_baseRgsc->is1();
+		// return m_baseRgsc->is1();
 		return true;
 	}
 
@@ -358,7 +355,6 @@ public:
 	FileSystemStub(void* basePtr)
 		: m_baseRgsc((IRgscFileSystem*)basePtr)
 	{
-
 	}
 
 	virtual HRESULT QueryInterface(GUID* iid, void** out) override
@@ -377,7 +373,7 @@ public:
 
 	GENERIC_STUB(m_07);
 	GENERIC_STUB(m_01);
-	
+
 	virtual HRESULT getProfilePath(char* buffer, int flag) override
 	{
 		LOG_CALL();
@@ -404,7 +400,6 @@ public:
 	CommerceManagerStub(void* basePtr)
 		: m_baseRgsc((IRgscCommerceManager*)basePtr)
 	{
-
 	}
 
 	virtual HRESULT QueryInterface(GUID* iid, void** out) override
@@ -477,7 +472,7 @@ public:
 		return (void*)1;
 	}
 
-	//GENERIC_STUB(m_33);
+	// GENERIC_STUB(m_33);
 
 	virtual void* m_33(void* a1, void* a2, void* a3, void* a4, void* a5, void* a6, void* a7)
 	{
@@ -488,7 +483,7 @@ public:
 	GENERIC_STUB(m_35);
 	GENERIC_STUB(m_36);
 	GENERIC_STUB(m_37);
-	//GENERIC_STUB(m_38);
+	// GENERIC_STUB(m_38);
 
 	virtual void* m_38(void* a1, void* a2, void* a3, void* a4, void* a5, void* a6, void* a7)
 	{
@@ -604,21 +599,21 @@ class RgscLogDelegate : public IRgscDelegate
 
 			switch (errorCode)
 			{
-			case 1014:
-				errorHelp = "Failed to initialize renderer subprocess.\n";
-				break;
-			case 1024:
-				errorHelp = "Failed to validate DLL versions.\n";
-				break;
-			case 1002:
-				errorHelp = "Failed to initialize file system.\n";
-				break;
-			case 1008:
-				errorHelp = "Failed to initialize gamer pic manager.\n";
-				break;
-			case 1005:
-				errorHelp = "Failed to initialize metadata. Please verify your game files before trying anything else.\n";
-				break;
+				case 1014:
+					errorHelp = "Failed to initialize renderer subprocess.\n";
+					break;
+				case 1024:
+					errorHelp = "Failed to validate DLL versions.\n";
+					break;
+				case 1002:
+					errorHelp = "Failed to initialize file system.\n";
+					break;
+				case 1008:
+					errorHelp = "Failed to initialize gamer pic manager.\n";
+					break;
+				case 1005:
+					errorHelp = "Failed to initialize metadata. Please verify your game files before trying anything else.\n";
+					break;
 			}
 
 			FatalError("R* SC SDK failed to initialize. Error code: %d\n%s\nPlease click 'Save information' below and upload the saved .zip file when asking for help!", errorCode, errorHelp);
@@ -693,9 +688,7 @@ public:
 	RgscStub(IRgsc* basePtr)
 		: m_baseRgsc(basePtr)
 	{
-
 	}
-
 
 	virtual HRESULT __stdcall QueryInterface(GUID* iid, void** out) override
 	{
@@ -727,7 +720,7 @@ public:
 
 	virtual void* __stdcall m_03() override
 	{
-		//LOG_CALL();
+		// LOG_CALL();
 
 		if (getenv("CitizenFX_ToolMode"))
 		{
@@ -832,11 +825,12 @@ public:
 
 			delegate->OnEvent(RgscEvent::RosTicketChanged, GetRockstarTicketXml().c_str());
 
-			//int yes = 1;
-			//delegate->OnEvent(RgscEvent::SigninStateChanged, &yes);
+			// int yes = 1;
+			// delegate->OnEvent(RgscEvent::SigninStateChanged, &yes);
 
 			g_signedIn = true;
-		}).detach();
+		})
+		.detach();
 
 		static RgscLogDelegate fakeDelegate;
 
@@ -959,8 +953,8 @@ IRgsc* GetScSdkStub()
 
 	WaitForSingleObject(g_rosClearedEvent, INFINITE);
 
-	auto getFunc = (IRgsc*(*)())GetProcAddress(GetModuleHandle(L"socialclub.dll"), MAKEINTRESOURCEA(1));
-	
+	auto getFunc = (IRgsc * (*)()) GetProcAddress(GetModuleHandle(L"socialclub.dll"), MAKEINTRESOURCEA(1));
+
 	if (!g_rgsc)
 	{
 		if (getenv("CitizenFX_ToolMode"))
@@ -986,7 +980,7 @@ FARPROC _stdcall GetProcAddressStub(HMODULE hModule, LPCSTR name)
 	return GetProcAddress(hModule, name);
 }
 
-static HookFunction hookFunction([] ()
+static HookFunction hookFunction([]()
 {
 	hook::iat("kernel32.dll", GetProcAddressStub, "GetProcAddress");
 });

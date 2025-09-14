@@ -38,8 +38,6 @@
 #include <rapidjson/document.h>
 #include <rapidjson/writer.h>
 
-#include "FormData.h"
-
 struct BuildData
 {
 	std::string version;
@@ -56,7 +54,6 @@ std::unordered_map<int, BuildData> buildInfoRDR3 = {
 };
 
 std::unordered_map<int, BuildData> buildInfoGTA5 = {
-	{ 3407, {"1.0.3407.0", 54341608, 107, "a947ba8627560835b4c28c9bb3c2ed2cbb5874cfec235e50e162ffc12e6455b2" } },
 	{ 3323, { "1.0.3323.0", 57496560, 105, "ed2322439789e7e8f94c8a1b3c1b80d4bcc48c86ed277d42dbf40fc28d412051" } },
 	{ 3258, { "1.0.3258.0", 56066032, 104, "9ec3afccec172a55712bede2dd41d2c330b6d803f9b61b723c8914616ef25aea" } },
 	{ 3095, { "1.0.3095.0", 49634800, 103, "4c663c738e184ea60b3c3208147c3815605d98d1802ec08107b2c22ac5f2c46d" } },
@@ -81,7 +78,8 @@ std::string GetRockstarTicketXml();
 std::string GetFilePath(const std::string& str)
 {
 	PWSTR appDataPath;
-	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &appDataPath))) {
+	if (SUCCEEDED(SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &appDataPath)))
+	{
 		std::string cfxPath = ToNarrow(appDataPath) + "\\DigitalEntitlements";
 		CreateDirectory(ToWide(cfxPath).c_str(), nullptr);
 
@@ -94,7 +92,6 @@ std::string GetFilePath(const std::string& str)
 
 	return "";
 }
-
 
 std::string GetOwnershipPath();
 
@@ -158,16 +155,15 @@ std::string GetEntitlementBlock(uint64_t accountId, const std::string& machineHa
 			success = false;
 		}
 	}
-	
+
 	if (!success)
 	{
 		auto r = cpr::Post(
-			cpr::Url{ CNL_ENDPOINT "api/validate/entitlement" },
-			cpr::Payload{
-				{ "entitlementId", ros::GetEntitlementSource() },
-				{ "machineHash", machineHash },
-				{ "rosId", fmt::sprintf("%lld", accountId) }
-			});
+		cpr::Url{ CNL_ENDPOINT "api/validate/entitlement" },
+		cpr::Payload{
+		{ "entitlementId", ros::GetEntitlementSource() },
+		{ "machineHash", machineHash },
+		{ "rosId", fmt::sprintf("%lld", accountId) } });
 
 		if (r.error || r.status_code >= 400)
 		{
@@ -214,7 +210,7 @@ public:
 	}
 
 private:
-	std::function<void(const fwRefContainer<net::HttpRequest> & request, const fwRefContainer<net::HttpResponse> & response)> m_function;
+	std::function<void(const fwRefContainer<net::HttpRequest>& request, const fwRefContainer<net::HttpResponse>& response)> m_function;
 };
 
 #if defined(IS_RDR3)
@@ -222,13 +218,13 @@ bool GetMTLSessionInfo(std::string& ticket, std::string& sessionTicket, std::arr
 
 static std::string GetRosTicket(const std::string& body)
 {
-	auto postData = net::DecodeFormData(body);
+	auto postData = ParsePOSTString(body);
 
 	std::string ticket;
 	std::string sessionTicket;
 	std::array<uint8_t, 16> sessionKeyArray;
 	uint64_t accountId = 0;
-	
+
 	assert(GetMTLSessionInfo(ticket, sessionTicket, sessionKeyArray, accountId));
 
 	std::string sessionKey = Botan::base64_encode(sessionKeyArray.data(), 16);
@@ -256,7 +252,7 @@ static std::string GetRosTicket(const std::string& body)
 	doc2.Accept(w);
 
 	auto r = cpr::Post(cpr::Url{ "http://localhost:32891/ros/validate" },
-		cpr::Body{ std::string(sb.GetString(), sb.GetLength()) });
+	cpr::Body{ std::string(sb.GetString(), sb.GetLength()) });
 
 	trace("%s\n", r.text);
 
@@ -264,7 +260,7 @@ static std::string GetRosTicket(const std::string& body)
 }
 #endif
 
-static InitFunction initFunction([] ()
+static InitFunction initFunction([]()
 {
 	EndpointMapper* mapper = Instance<EndpointMapper>::Get();
 
@@ -275,9 +271,9 @@ static InitFunction initFunction([] ()
 	});
 #endif
 
-	mapper->AddGameService("entitlements.asmx/GetEntitlementBlock", [] (const std::string& body)
+	mapper->AddGameService("entitlements.asmx/GetEntitlementBlock", [](const std::string& body)
 	{
-		auto postData = net::DecodeFormData(body);
+		auto postData = ParsePOSTString(body);
 
 		auto accountId = ROS_DUMMY_ACCOUNT_ID;
 		auto machineHash = postData["machineHash"];
@@ -291,9 +287,8 @@ static InitFunction initFunction([] ()
 #endif
 
 		return fmt::sprintf(
-			"<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"0.574\" xmlns=\"GetEntitlementBlockResponse\"><Status>1</Status><Result Version=\"1\"><Data>%s</Data></Result></Response>",
-			outStr
-		);
+		"<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"0.574\" xmlns=\"GetEntitlementBlockResponse\"><Status>1</Status><Result Version=\"1\"><Data>%s</Data></Result></Response>",
+		outStr);
 	});
 
 #if defined(IS_RDR3)
@@ -303,18 +298,17 @@ static InitFunction initFunction([] ()
 	});
 #endif
 
-	mapper->AddGameService("entitlements.asmx/GetEntitlements", [] (const std::string& body)
+	mapper->AddGameService("entitlements.asmx/GetEntitlements", [](const std::string& body)
 	{
 		return "<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"0\" xmlns=\"EntitlementsResponse\">\r\n\r\n  <Status>1</Status>\r\n\r\n  <Entitlements xsi:type=\"EntitlementsListXmlMD5\">\r\n\r\n    <Entitlement InstanceId=\"1\" EntitlementCode=\"1972D87D58D9790D41A19FCDC1C3600A\" FriendlyName=\"$500,000 for Grand Theft Auto V Story Mode\" Count=\"1\" Visible=\"true\" Type=\"Durable\">\r\n\r\n      <CreatedDate>2015-04-14T00:00:00.000Z</CreatedDate>\r\n\r\n    </Entitlement>\r\n\r\n    <Entitlement InstanceId=\"2\" EntitlementCode=\"27BF767F361818E864967CBF808DC6C2\" FriendlyName=\"Access to Grand Theft Auto V for PC\" Count=\"1\" Visible=\"false\" Type=\"Durable\">\r\n\r\n      <CreatedDate>2015-04-14T00:00:00.000Z</CreatedDate>\r\n\r\n    </Entitlement>\r\n\r\n<Entitlement InstanceId=\"3\" EntitlementCode=\"4D754F8EF1B135DBD3DDDE760A9352DA\" FriendlyName=\"Access to Grand Theft Auto V for PC\" Count=\"1\" Visible=\"true\" Type=\"Durable\"><CreatedDate>2015-04-14T00:00:00.000Z</CreatedDate></Entitlement><Entitlement InstanceId=\"4\" EntitlementCode=\"4748A48AFB22BAE2FD6A4506655B2D95\" FriendlyName=\"Access to Grand Theft Auto V for PC Steam\" Count=\"1\" Visible=\"true\" Type=\"Durable\">\r\n\r\n      <CreatedDate>2015-04-14T00:00:000Z</CreatedDate>\r\n\r\n    </Entitlement>\r\n\r\n  </Entitlements>\r\n\r\n</Response>";
 	});
 
-	mapper->AddGameService("GeoLocation.asmx/GetRelayServers", [] (const std::string& body)
+	mapper->AddGameService("GeoLocation.asmx/GetRelayServers", [](const std::string& body)
 	{
 		return "<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"15.6263\" xmlns=\"RegionBucketLookUpResponse\"><Status>1</Status><LocInfo RegionCode=\"3\" Longitude=\"0.0\" Latitude=\"0.0\" CountryCode=\"US\" /><RelaysList Count=\"1\" IsSecure=\"false\"><Server Host=\"185.56.65.153:61456\" IsXblSg=\"false\" /></RelaysList></Response>";
 	});
 
-
-	mapper->AddGameService("matchmaking.asmx/Find", [] (const std::string& body)
+	mapper->AddGameService("matchmaking.asmx/Find", [](const std::string& body)
 	{
 		{
 
@@ -338,22 +332,22 @@ static InitFunction initFunction([] ()
 		return R"(<?xml version="1.0" encoding="utf-8"?><Response><Status>0</Status></Response>)";
 	});
 
-	mapper->AddGameService("matchmaking.asmx/Advertise", [] (const std::string& body)
+	mapper->AddGameService("matchmaking.asmx/Advertise", [](const std::string& body)
 	{
 		return "<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"15.6263\" xmlns=\"AdvertiseResponse\"><Status>1</Status><MatchId>875fd057-fe8d-4145-a4e1-76b57a81817d</MatchId></Response>";
 	});
 
-	mapper->AddGameService("matchmaking.asmx/Unadvertise", [] (const std::string& body)
+	mapper->AddGameService("matchmaking.asmx/Unadvertise", [](const std::string& body)
 	{
 		return "<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"15.6263\" xmlns=\"UnadvertiseResponse\"><Status>1</Status></Response>";
 	});
 
-	mapper->AddGameService("matchmaking.asmx/Update", [] (const std::string& body)
+	mapper->AddGameService("matchmaking.asmx/Update", [](const std::string& body)
 	{
 		return "<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"15.6263\" xmlns=\"UpdateResponse\"><Status>1</Status></Response>";
 	});
 
-	mapper->AddGameService("socialclub.asmx/CreateScAuthToken", [] (const std::string& body)
+	mapper->AddGameService("socialclub.asmx/CreateScAuthToken", [](const std::string& body)
 	{
 		return "<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"0\" xmlns=\"CreateScAuthToken\"><Status>1</Status><Result>AAAAArgQdyps/xBHKUumlIADBO75R0gAekcl3m2pCg3poDsXy9n7Vv4DmyEmHDEtv49b5BaUWBiRR/lVOYrhQpaf3FJCp4+22ETI8H0NhuTTijxjbkvDEViW9x6bOEAWApixmQue2CNN3r7X8vQ/wcXteChEHUHi</Result></Response>";
 	});
@@ -373,7 +367,7 @@ static InitFunction initFunction([] ()
 		return "<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"0\" ScAuthToken=\"AAAAArgQdyps/xBHKUumlIADBO75R0gAekcl3m2pCg3poDsXy9n7Vv4DmyEmHDEtv49b5BaUWBiRR/lVOYrhQpaf3FJCp4+22ETI8H0NhuTTijxjbkvDEViW9x6bOEAWApixmQue2CNN3r7X8vQ/wcXteChEHUHi\" xmlns=\"CreateScAuthToken2\"><Status xmlns=\"CreateScAuthTokenResponse\">1</Status></Response>";
 	});
 
-	mapper->AddGameService("socialclub.asmx/CheckText", [] (const std::string& body)
+	mapper->AddGameService("socialclub.asmx/CheckText", [](const std::string& body)
 	{
 		return "<?xml version=\"1.0\" encoding=\"utf-8\"?><Response xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" ms=\"0\" xmlns=\"CheckText\"><Status>1</Status></Response>";
 	});
@@ -467,94 +461,91 @@ static InitFunction initFunction([] ()
 	static std::map<int, nlohmann::json> photoData;
 
 	mapper->AddPrefix("/uploadPhoto", new LambdaHttpHandler([](fwRefContainer<net::HttpRequest> req, fwRefContainer<net::HttpResponse> res)
-	{
-		req->SetDataHandler([req, res](const std::vector<uint8_t>& postData)
-		{
-			auto idx = req->GetHeader("X-Agile-Authorization", "-1");
-			auto dataIt = photoData.find(std::stoi(idx));
+									  {
+										  req->SetDataHandler([req, res](const std::vector<uint8_t>& postData)
+										  {
+											  auto idx = req->GetHeader("X-Agile-Authorization", "-1");
+											  auto dataIt = photoData.find(std::stoi(idx));
 
-			if (dataIt == photoData.end())
-			{
-				res->WriteHead(400);
-				res->End("Bad request.");
+											  if (dataIt == photoData.end())
+											  {
+												  res->WriteHead(400);
+												  res->End("Bad request.");
 
-				return;
-			}
+												  return;
+											  }
 
-			auto& data = dataIt->second;
+											  auto& data = dataIt->second;
 
-			std::string token;
-			std::string clientId;
+											  std::string token;
+											  std::string clientId;
 
-			if (Instance<ICoreGameInit>::Get()->GetData("discourseUserToken", &token) &&
-				Instance<ICoreGameInit>::Get()->GetData("discourseClientId", &clientId))
-			{
-				// pass Multipart as lvalue to work around bug in cpr
-				// https://github.com/whoshuu/cpr/issues/216#issuecomment-450474117
-				auto mp = cpr::Multipart{
-						{ "type", "image" },
-						{ "files[]", cpr::Buffer{postData.begin(), postData.end(), "image.jpg"} }
-				};
+											  if (Instance<ICoreGameInit>::Get()->GetData("discourseUserToken", &token) && Instance<ICoreGameInit>::Get()->GetData("discourseClientId", &clientId))
+											  {
+												  // pass Multipart as lvalue to work around bug in cpr
+												  // https://github.com/whoshuu/cpr/issues/216#issuecomment-450474117
+												  auto mp = cpr::Multipart{
+													  { "type", "image" },
+													  { "files[]", cpr::Buffer{ postData.begin(), postData.end(), "image.jpg" } }
+												  };
 
-				auto h = cpr::Header{
-					{ "User-Agent", "CitizenFX/Five" },
-					{ "User-Api-Client-Id", clientId },
-					{ "User-Api-Key", token },
-				};
+												  auto h = cpr::Header{
+													  { "User-Agent", "CitizenFX/Five" },
+													  { "User-Api-Client-Id", clientId },
+													  { "User-Api-Key", token },
+												  };
 
-				auto upload = cpr::Post(cpr::Url{ "https://forum.cfx.re/uploads.json" },
-					h,
-					mp);
+												  auto upload = cpr::Post(cpr::Url{ "https://forum.cfx.re/uploads.json" },
+												  h,
+												  mp);
 
-				if (!upload.error && upload.status_code < 400)
-				{
-					auto resp = upload.text;
-					auto dataRef = nlohmann::json::parse(data["DataJson"].get<std::string>());
+												  if (!upload.error && upload.status_code < 400)
+												  {
+													  auto resp = upload.text;
+													  auto dataRef = nlohmann::json::parse(data["DataJson"].get<std::string>());
 
-					auto json = nlohmann::json::parse(resp);
+													  auto json = nlohmann::json::parse(resp);
 
-					if (json.value("id", 0) != 0)
-					{
-						auto url = json.value("short_url", "");
-						auto tw = json.value("thumbnail_width", 0);
-						auto th = json.value("thumbnail_height", 0);
+													  if (json.value("id", 0) != 0)
+													  {
+														  auto url = json.value("short_url", "");
+														  auto tw = json.value("thumbnail_width", 0);
+														  auto th = json.value("thumbnail_height", 0);
 
-						std::string name;
-						net::UrlDecode(data.value("ContentName", ""), name);
+														  std::string name;
+														  UrlDecode(data.value("ContentName", ""), name);
 
-						auto b = nlohmann::json::object({
-							{ "category", 68 },
-							{ "title", name },
-							{ "raw", fmt::sprintf("![image|%dx%d](%s) \n\n[details=\"Metadata\"]\n```json\n%s\n```\n[/details]", tw, th, url, dataRef.dump(4)) },
-							{ "tags", nlohmann::json::array({"gta5photo", dataRef.value("area", "somewhere")}) }
-						});
+														  auto b = nlohmann::json::object({ { "category", 68 },
+														  { "title", name },
+														  { "raw", fmt::sprintf("![image|%dx%d](%s) \n\n[details=\"Metadata\"]\n```json\n%s\n```\n[/details]", tw, th, url, dataRef.dump(4)) },
+														  { "tags", nlohmann::json::array({ "gta5photo", dataRef.value("area", "somewhere") }) } });
 
-						h["Content-Type"] = "application/json; charset=utf-8";
+														  h["Content-Type"] = "application/json; charset=utf-8";
 
-						auto post = cpr::Post(cpr::Url{ "https://forum.cfx.re/posts.json" },
-							h,
-							cpr::Body{ b.dump() });
+														  auto post = cpr::Post(cpr::Url{ "https://forum.cfx.re/posts.json" },
+														  h,
+														  cpr::Body{ b.dump() });
 
-						if (!post.error && post.status_code < 400)
-						{
-							trace("posted: %s\n", post.text);
+														  if (!post.error && post.status_code < 400)
+														  {
+															  trace("posted: %s\n", post.text);
 
-							res->WriteHead(200);
-							res->End("OK!");
-							return;
-						}
-					}
-				}
-			}
+															  res->WriteHead(200);
+															  res->End("OK!");
+															  return;
+														  }
+													  }
+												  }
+											  }
 
-			res->WriteHead(400);
-			res->End("Failed to upload.");
-		});
-	}));
+											  res->WriteHead(400);
+											  res->End("Failed to upload.");
+										  });
+									  }));
 
 	mapper->AddGameService("ugc.asmx/CreateContent", [](const std::string& body)
 	{
-		auto postData = net::DecodeFormData(body);
+		auto postData = ParsePOSTString(body);
 		auto jsonData = nlohmann::json::parse(postData["paramsJson"]);
 
 		if (postData["contentType"] == "gta5photo")
@@ -562,8 +553,7 @@ static InitFunction initFunction([] ()
 			std::string token;
 			std::string clientId;
 
-			if (Instance<ICoreGameInit>::Get()->GetData("discourseUserToken", &token) &&
-				Instance<ICoreGameInit>::Get()->GetData("discourseClientId", &clientId))
+			if (Instance<ICoreGameInit>::Get()->GetData("discourseUserToken", &token) && Instance<ICoreGameInit>::Get()->GetData("discourseClientId", &clientId))
 			{
 				auto jsonDataNested = nlohmann::json::parse(jsonData["DataJson"].get<std::string>());
 				jsonDataNested["llat"] = fmt::sprintf("%d", photoIdx);
@@ -582,7 +572,8 @@ static InitFunction initFunction([] ()
             <![CDATA[%s]]>
         </da>
     </Result>
-</Response>)", jsonDataNested.dump());
+</Response>)",
+				jsonDataNested.dump());
 			}
 		}
 
@@ -592,8 +583,8 @@ static InitFunction initFunction([] ()
 </Response>)");
 	});
 
-mapper->AddGameService("ugc.asmx/Publish", [](const std::string& body)
-{
+	mapper->AddGameService("ugc.asmx/Publish", [](const std::string& body)
+	{
 		return R"(<?xml version="1.0" encoding="utf-8"?>
 <Response xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ms="640" xmlns="Publish">
     <Status>1</Status>
@@ -629,7 +620,7 @@ mapper->AddGameService("ugc.asmx/Publish", [](const std::string& body)
 
 	mapper->AddGameService("App.asmx/GetBuildManifestFullNoAuth", [](const std::string& body)
 	{
-		auto postData = net::DecodeFormData(body);
+		auto postData = ParsePOSTString(body);
 
 		if (postData["branchAccessToken"].find("YAFA") != std::string::npos)
 		{
@@ -707,7 +698,7 @@ mapper->AddGameService("ugc.asmx/Publish", [](const std::string& body)
 
 	mapper->AddGameService("legalpolicies.asmx/GetAcceptedVersion", [](const std::string& body)
 	{
-		auto postData = net::DecodeFormData(body);
+		auto postData = ParsePOSTString(body);
 
 		return fmt::sprintf(R"(<?xml version="1.0" encoding="utf-8"?>
 <Response xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" ms="0" xmlns="http://services.ros.rockstargames.com/">
@@ -720,7 +711,7 @@ mapper->AddGameService("ugc.asmx/Publish", [](const std::string& body)
 
 	mapper->AddGameService("App.asmx/GetBuildManifestFull", [](const std::string& body)
 	{
-		auto postData = net::DecodeFormData(body);
+		auto postData = ParsePOSTString(body);
 
 		std::unordered_map<int, BuildData> buildInfo{};
 		std::string gameExe;
@@ -754,7 +745,8 @@ mapper->AddGameService("ugc.asmx/Publish", [](const std::string& body)
     </FileManifest>
     <IsPreload>false</IsPreload>
   </Result>
-</Response>)", info->second.build, info->second.version, info->second.size, gameExe, info->second.sha256, info->second.sha256, info->second.size);
+</Response>)",
+			info->second.build, info->second.version, info->second.size, gameExe, info->second.sha256, info->second.sha256, info->second.size);
 		}
 
 		return std::string{ R"(<Response xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="RetrieveFileChunkNoAuth" ms="0">

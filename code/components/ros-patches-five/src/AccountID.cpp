@@ -38,24 +38,23 @@
 
 #include "CfxReleaseInfo.h"
 
-constexpr const auto kROSBlobEmailOffset = 8; // 0x8
-constexpr const auto kROSBlobTicketOffset = 2800; // 0xAF0
-constexpr const auto kROSBlobSessionTicketOffset = 3312; // 0xCF0
-constexpr const auto kROSBlobAccountIdOffset = 3824; // 0xEF0
-constexpr const auto kROSBlobUsernameOffset = 3751; // 0xEA7
-constexpr const auto kROSBlobSessionKeyOffset = 4480; // 0x1180
+constexpr const auto kROSBlobEmailOffset = 8;
+constexpr const auto kROSBlobTicketOffset = 2800;
+constexpr const auto kROSBlobSessionTicketOffset = 3312;
+constexpr const auto kROSBlobAccountIdOffset = 3824;
+constexpr const auto kROSBlobUsernameOffset = 3751;
+constexpr const auto kROSBlobSessionKeyOffset = 4368;
 
 template<typename... Ts>
 static auto PostAutoLogin(Ts&&... args)
 {
 	return cpr::Post(
-		cpr::Header{
-			{ "Content-Type", "application/json; charset=utf-8" },
-			{ "Accept", "application/json" },
-			{ "X-Requested-With", "XMLHttpRequest" } },
-		cpr::UserAgent{ fmt::sprintf("CitizenFX/1 (rel. %d)", cfx::GetPlatformRelease()) },
-		std::forward<Ts>(args)...
-	);
+	cpr::Header{
+	{ "Content-Type", "application/json; charset=utf-8" },
+	{ "Accept", "application/json" },
+	{ "X-Requested-With", "XMLHttpRequest" } },
+	cpr::UserAgent{ fmt::sprintf("CitizenFX/1 (rel. %d)", cfx::GetPlatformRelease()) },
+	std::forward<Ts>(args)...);
 }
 
 static bool TryFindError(const std::string& errorString, std::string* outMessage)
@@ -200,7 +199,7 @@ static std::vector<DWORD> GetMTLPids()
 
 						if (GetFileAttributesW(path) != INVALID_FILE_ATTRIBUTES)
 						{*/
-							rv.push_back(pids[i]);
+						rv.push_back(pids[i]);
 						//}
 					}
 				}
@@ -259,7 +258,7 @@ static bool InitAccountSteam()
 			uuiState->SetProgress(100.0);
 			uuiState->Open();
 
-			RunLauncher(L"ros:steam", true);			
+			RunLauncher(L"ros:steam", true);
 
 			uuiState->Close();
 		}
@@ -646,7 +645,7 @@ void ValidateEpic(int parentPid)
 	}
 
 	EOS_InitializeOptions eio = { 0 };
-	eio.ApiVersion = 2; //EOS_INITIALIZE_API_LATEST;
+	eio.ApiVersion = 2; // EOS_INITIALIZE_API_LATEST;
 #ifdef IS_RDR3
 	eio.ProductName = "RDR2";
 #else
@@ -658,7 +657,7 @@ void ValidateEpic(int parentPid)
 	_EOS_Initialize(&eio);
 
 	EOS_Platform_Options epo = { 0 };
-	epo.ApiVersion = 5; //EOS_PLATFORM_OPTIONS_API_LATEST;
+	epo.ApiVersion = 5; // EOS_PLATFORM_OPTIONS_API_LATEST;
 #ifdef IS_RDR3
 	epo.ProductId = "1893447b7ea5459b96191a7458075768";
 	epo.SandboxId = "b30b6d1b4dfd4dcc93b5490be5e094e5";
@@ -684,13 +683,13 @@ void ValidateEpic(int parentPid)
 	auto nepicPassword = ToNarrow(epicPassword);
 
 	EOS_Auth_Credentials ecs = { 0 };
-	ecs.ApiVersion = 1; //EOS_AUTH_CREDENTIALS_API_LATEST;
+	ecs.ApiVersion = 1; // EOS_AUTH_CREDENTIALS_API_LATEST;
 	ecs.Type = EOS_ELoginCredentialType::EOS_LCT_ExchangeCode;
 	ecs.Token = nepicPassword.c_str();
 
 	EOS_Auth_LoginOptions eao = { 0 };
-	eao.ApiVersion = 1;//EOS_AUTH_LOGIN_API_LATEST;
-	//eao.ScopeFlags = 0;
+	eao.ApiVersion = 1; // EOS_AUTH_LOGIN_API_LATEST;
+	// eao.ScopeFlags = 0;
 	eao.Credentials = &ecs;
 
 	static HANDLE hWait = CreateEvent(NULL, FALSE, FALSE, NULL);
@@ -755,7 +754,7 @@ void ValidateEpic(int parentPid)
 	blob->inUI = false;
 
 	AddTpaToken(g_tpaId, g_tpaToken);
-	
+
 	j = nlohmann::json::parse(g_rosData2);
 
 	auto sessionKey = Botan::base64_decode(j.value("SessionKey", ""));
@@ -776,21 +775,21 @@ void ValidateEpic(int parentPid)
 
 	j = nlohmann::json::object({
 #ifdef IS_RDR3
-		{ "title", "rdr2" },
+	{ "title", "rdr2" },
 #else
-		{ "title", "gta5" },
+	{ "title", "gta5" },
 #endif
-		{ "env", "prod" },
-		{ "epicPlayerJwt", s },
-		{ "playerTicket", tick },
-		{ "version", 11 },
+	{ "env", "prod" },
+	{ "epicPlayerJwt", s },
+	{ "playerTicket", tick },
+	{ "version", 11 },
 	});
 
 	r = PostAutoLogin(
 	cpr::Url{ "https://rgl.rockstargames.com/api/launcher/bindepicaccount" },
 	cpr::Header{
 	{
-		{ "Authorization", fmt::sprintf("SCAUTH val=\"%s\"", tick) },
+	{ "Authorization", fmt::sprintf("SCAUTH val=\"%s\"", tick) },
 	} },
 	cpr::Body{
 	j.dump() });
@@ -904,22 +903,21 @@ void ValidateSteam(int parentPid)
 	strcpy((char*)&blob->data[kROSBlobUsernameOffset], j.value("Nickname", "").c_str());
 
 	j = nlohmann::json::object({
-		{ "title", appName },
-		{ "env", "prod" },
-		{ "steamAuthTicket", s },
-		{ "steamAppId", appId },
-		{ "playerTicket", tick },
-		{ "version", 11 },
+	{ "title", appName },
+	{ "env", "prod" },
+	{ "steamAuthTicket", s },
+	{ "steamAppId", appId },
+	{ "playerTicket", tick },
+	{ "version", 11 },
 	});
 
 	r = PostAutoLogin(
-		cpr::Url{ "https://rgl.rockstargames.com/api/launcher/bindsteamaccount" },
-		cpr::Header{
-			{"Authorization", fmt::sprintf("SCAUTH val=\"%s\"", tick) },
-		},
-		cpr::Body{
-			j.dump()
-		});
+	cpr::Url{ "https://rgl.rockstargames.com/api/launcher/bindsteamaccount" },
+	cpr::Header{
+	{ "Authorization", fmt::sprintf("SCAUTH val=\"%s\"", tick) },
+	},
+	cpr::Body{
+	j.dump() });
 
 	if (r.error)
 	{
@@ -1009,7 +1007,7 @@ static bool InitAccountMTL()
 
 		return false;
 	}
-	
+
 	if (!scModule)
 	{
 #if defined(IS_RDR3)
@@ -1127,7 +1125,7 @@ uint64_t ROSGetDummyAccountID()
 	static std::once_flag gotAccountId;
 	static uint32_t accountId;
 
-	std::call_once(gotAccountId, [] ()
+	std::call_once(gotAccountId, []()
 	{
 		PWSTR appdataPath = nullptr;
 		SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appdataPath);
@@ -1136,7 +1134,7 @@ uint64_t ROSGetDummyAccountID()
 
 		FILE* f = _wfopen(va(L"%s\\CitizenFX\\ros_id%s.dat", appdataPath, IsCL2() ? L"CL2" : L""), L"rb");
 
-		auto generateNewId = [&] ()
+		auto generateNewId = [&]()
 		{
 			// generate a random id
 			HCRYPTPROV provider;
@@ -1219,92 +1217,92 @@ extern "C" DLL_EXPORT uint64_t GetAccountID()
 
 bool LoadAccountData(std::string& str)
 {
-    // make path
-    wchar_t* appdataPath;
-    SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appdataPath);
+	// make path
+	wchar_t* appdataPath;
+	SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appdataPath);
 
-    CreateDirectory(va(L"%s\\CitizenFX", appdataPath), nullptr);
+	CreateDirectory(va(L"%s\\CitizenFX", appdataPath), nullptr);
 
-    // open?
-    FILE* f = _wfopen(va(L"%s\\CitizenFX\\ros_auth.dat", appdataPath), L"rb");
+	// open?
+	FILE* f = _wfopen(va(L"%s\\CitizenFX\\ros_auth.dat", appdataPath), L"rb");
 
-    if (!f)
-    {
-        CoTaskMemFree(appdataPath);
-        return false;
-    }
+	if (!f)
+	{
+		CoTaskMemFree(appdataPath);
+		return false;
+	}
 
-    // seek
-    fseek(f, 0, SEEK_END);
-    int length = ftell(f);
-    fseek(f, 0, SEEK_SET);
+	// seek
+	fseek(f, 0, SEEK_END);
+	int length = ftell(f);
+	fseek(f, 0, SEEK_SET);
 
-    // read
-    std::vector<char> data(length + 1);
-    fread(&data[0], 1, length, f);
+	// read
+	std::vector<char> data(length + 1);
+	fread(&data[0], 1, length, f);
 
-    fclose(f);
+	fclose(f);
 
-    // hm
-    str = &data[0];
+	// hm
+	str = &data[0];
 
-    CoTaskMemFree(appdataPath);
+	CoTaskMemFree(appdataPath);
 
-    return true;
+	return true;
 }
 
 bool LoadAccountData(boost::property_tree::ptree& tree)
 {
-    std::string str;
+	std::string str;
 
-    if (!LoadAccountData(str))
-    {
-        return false;
-    }
+	if (!LoadAccountData(str))
+	{
+		return false;
+	}
 
-    std::stringstream stream(str);
+	std::stringstream stream(str);
 
-    boost::property_tree::read_xml(stream, tree);
+	boost::property_tree::read_xml(stream, tree);
 
-    if (tree.get("Response.Status", 0) == 0)
-    {
-        return false;
-    }
-    else
-    {
-        std::string ticket = tree.get<std::string>("Response.Ticket");
-        int posixTime = tree.get<int>("Response.PosixTime");
-        int secsUntilExpiration = tree.get<int>("Response.SecsUntilExpiration");
+	if (tree.get("Response.Status", 0) == 0)
+	{
+		return false;
+	}
+	else
+	{
+		std::string ticket = tree.get<std::string>("Response.Ticket");
+		int posixTime = tree.get<int>("Response.PosixTime");
+		int secsUntilExpiration = tree.get<int>("Response.SecsUntilExpiration");
 
-        if (time(nullptr) < (posixTime + secsUntilExpiration))
-        {
-            return true;
-        }
-    }
+		if (time(nullptr) < (posixTime + secsUntilExpiration))
+		{
+			return true;
+		}
+	}
 
-    return false;
+	return false;
 }
 
 void SaveAccountData(const std::string& data)
 {
-    // make path
-    wchar_t* appdataPath;
-    SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appdataPath);
+	// make path
+	wchar_t* appdataPath;
+	SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appdataPath);
 
-    CreateDirectory(va(L"%s\\CitizenFX", appdataPath), nullptr);
+	CreateDirectory(va(L"%s\\CitizenFX", appdataPath), nullptr);
 
-    // open?
-    FILE* f = _wfopen(va(L"%s\\CitizenFX\\ros_auth.dat", appdataPath), L"wb");
+	// open?
+	FILE* f = _wfopen(va(L"%s\\CitizenFX\\ros_auth.dat", appdataPath), L"wb");
 
-    CoTaskMemFree(appdataPath);
+	CoTaskMemFree(appdataPath);
 
-    if (!f)
-    {
-        return;
-    }
+	if (!f)
+	{
+		return;
+	}
 
-    fwrite(data.c_str(), 1, data.size(), f);
-    fclose(f);
+	fwrite(data.c_str(), 1, data.size(), f);
+	fclose(f);
 }
 
 #include <CrossBuildRuntime.h>

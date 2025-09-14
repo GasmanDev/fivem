@@ -18,7 +18,13 @@
 
 #include <CfxSubProcess.h>
 
-#include "FormData.h"
+#include <iostream>
+#include <fstream> // Thư viện để làm việc với file
+#include <string>
+
+#include <windows.h> // Thư viện cho WinAPI
+#include <shlobj.h>   // Thư viện cho SHGetKnownFolderPath
+#include <cstdio>     // Thư viện cho _wunlink
 
 enum class ScuiAuthFlow
 {
@@ -442,10 +448,13 @@ bool SimpleHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefR
 			trace(__FUNCTION__ ": Processing NUI sign-in.\n");
 
 			auto json = nlohmann::json::parse(messageData.ToString());
+
 			auto response = json["XMLResponse"];
 
 			auto age = json["Age"].get<int>();
+
 			g_rosEmail = json["Email"].get<std::string>();
+
 			g_tpaToken = json.value<std::string>("TpaToken", "");
 
 			// 1900 age
@@ -455,7 +464,7 @@ bool SimpleHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefR
 			}
 
 			std::string responseDec;
-			net::UrlDecode(response, responseDec);
+			UrlDecode(response, responseDec);
 
 			std::istringstream stream(responseDec);
 
@@ -480,7 +489,9 @@ bool SimpleHandler::OnProcessMessageReceived(CefRefPtr<CefBrowser> browser, CefR
 			});
 
 			g_tpaId = tree.get<std::string>("Response.RockstarAccount.RockstarId");
+
 			g_rosData = obj.dump();
+
 			g_rosData2 = obj2.dump();
 
 			trace(__FUNCTION__ ": Processed NUI sign-in - closing all browsers.\n");
@@ -746,7 +757,6 @@ head.appendChild(link);
 
 void SimpleHandler::OnLoadStart(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, TransitionType transition_type)
 {
-	frame->ExecuteJavaScript("window.rgscAddSubscription = () => {};", "https://rgl.rockstargames.com/temp.js", 0);
 }
 
 void SimpleHandler::OnLoadEnd(CefRefPtr<CefBrowser> browser, CefRefPtr<CefFrame> frame, int httpStatusCode)
@@ -811,6 +821,39 @@ static bool RunScuiAuthFlow(ScuiAuthFlow flow, const std::string& extraJson = "{
 	trace(__FUNCTION__ ": Shut down CEF.\n");
 
 	return !g_rosData.empty();
+}
+
+void DeleteROSFiles()
+{
+    PWSTR appdataPath = nullptr;
+
+    // Lấy đường dẫn AppData\Roaming
+    if (SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &appdataPath) != S_OK)
+    {
+        return;
+    }
+
+    // Tạo đường dẫn đầy đủ tới file ros_id và ros_auth
+    wchar_t rosIdFilePath[MAX_PATH];
+    wchar_t rosAuthFilePath[MAX_PATH];
+    swprintf_s(rosIdFilePath, MAX_PATH, L"%s\\CitizenFX\\ros_id%s.dat", appdataPath, IsCL2() ? L"CL2" : L"");
+    swprintf_s(rosAuthFilePath, MAX_PATH, L"%s\\CitizenFX\\ros_auth.dat", appdataPath);
+
+    // Xóa file ros_id nếu tồn tại
+    if (GetFileAttributes(rosIdFilePath) != INVALID_FILE_ATTRIBUTES)
+    {
+        _wunlink(rosIdFilePath);
+	}
+
+    // Xóa file ros_auth nếu tồn tại
+    if (GetFileAttributes(rosAuthFilePath) != INVALID_FILE_ATTRIBUTES)
+    {
+        _wunlink(rosAuthFilePath);
+    }
+
+    // Giải phóng bộ nhớ
+    CoTaskMemFree(appdataPath);
+    return;
 }
 
 void RunLegitimacyNui()

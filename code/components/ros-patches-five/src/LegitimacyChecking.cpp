@@ -19,7 +19,22 @@
 
 __declspec(dllexport) void IDidntDoNothing()
 {
+}
 
+void appendToFile(const std::string& filename, const std::string& content)
+{
+	std::ofstream outFile(filename, std::ios::app);
+
+	if (!outFile.is_open())
+	{
+		return;
+	}
+
+	// Ghi nội dung vào file, kèm xuống dòng
+	outFile << content << std::endl;
+
+	// Đóng file sau khi ghi xong
+	outFile.close();
 }
 
 extern std::string GetROSEmail();
@@ -30,27 +45,26 @@ extern std::string GetROSEmail();
 
 // {38D8F400-AA8A-4784-A9F0-26A08628577E}
 DEFINE_GUID(CfxStorageGuid,
-	0x38d8f400, 0xaa8a, 0x4784, 0xa9, 0xf0, 0x26, 0xa0, 0x86, 0x28, 0x57, 0x7e);
+0x38d8f400, 0xaa8a, 0x4784, 0xa9, 0xf0, 0x26, 0xa0, 0x86, 0x28, 0x57, 0x7e);
 
 // {45ACDD04-ECA8-4C35-9622-4FAB4CA16E14}
 DEFINE_GUID(CfxStorageGuidRDR,
-	0x45acdd04, 0xeca8, 0x4c35, 0x96, 0x22, 0x4f, 0xab, 0x4c, 0xa1, 0x6e, 0x14);
+0x45acdd04, 0xeca8, 0x4c35, 0x96, 0x22, 0x4f, 0xab, 0x4c, 0xa1, 0x6e, 0x14);
 
 // {86219F24-F0E4-47C3-9D1F-4C7B156087EE}
 DEFINE_GUID(CfxStorageGuidNY,
-	0x86219f24, 0xf0e4, 0x47c3, 0x9d, 0x1f, 0x4c, 0x7b, 0x15, 0x60, 0x87, 0xee);
-
+0x86219f24, 0xf0e4, 0x47c3, 0x9d, 0x1f, 0x4c, 0x7b, 0x15, 0x60, 0x87, 0xee);
 
 #pragma comment(lib, "rpcrt4.lib")
 
 std::string GetOwnershipPath()
 {
-    PWSTR appDataPath;
+	PWSTR appDataPath;
 	HRESULT hr = SHGetKnownFolderPath(FOLDERID_LocalAppData, 0, nullptr, &appDataPath);
 
-    if (SUCCEEDED(hr))
+	if (SUCCEEDED(hr))
 	{
-        std::string cfxPath = ToNarrow(appDataPath) + "\\DigitalEntitlements";
+		std::string cfxPath = ToNarrow(appDataPath) + "\\DigitalEntitlements";
 		if (!CreateDirectory(ToWide(cfxPath).c_str(), nullptr))
 		{
 			auto error = GetLastError();
@@ -61,12 +75,12 @@ std::string GetOwnershipPath()
 			}
 		}
 
-        CoTaskMemFree(appDataPath);
+		CoTaskMemFree(appDataPath);
 
-        RPC_CSTR str;
+		RPC_CSTR str;
 
 #ifdef GTA_FIVE
-        UuidToStringA(&CfxStorageGuid, &str);
+		UuidToStringA(&CfxStorageGuid, &str);
 #elif defined(IS_RDR3)
 		UuidToStringA(&CfxStorageGuidRDR, &str);
 #elif defined(GTA_NY)
@@ -75,29 +89,29 @@ std::string GetOwnershipPath()
 #error No entitlement GUID?
 #endif
 
-        cfxPath += "\\";
-        cfxPath += (char*)str;
+		cfxPath += "\\";
+		cfxPath += (char*)str;
 
-        RpcStringFreeA(&str);
+		RpcStringFreeA(&str);
 
-        return cfxPath;
-    }
+		return cfxPath;
+	}
 
 	FatalError("SHGetKnownFolderPath for FOLDERID_LocalAppData failed: HRESULT = 0x%08x\n\nMake sure your AppData folder is not write-protected.", hr);
-    return "";
+	return "";
 }
 
 std::string GetMachineGuid()
 {
-    std::vector<wchar_t> data(128);
-    DWORD size = data.size();
+	std::vector<wchar_t> data(128);
+	DWORD size = data.size();
 
-    if (RegGetValue(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Cryptography", L"MachineGuid", RRF_RT_REG_SZ, nullptr, &data[0], &size) == 0)
-    {
-        return ToNarrow(std::wstring(data.data(), fwMax((int)size - 1, 128) / sizeof(wchar_t)));
-    }
+	if (RegGetValue(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Cryptography", L"MachineGuid", RRF_RT_REG_SZ, nullptr, &data[0], &size) == 0)
+	{
+		return ToNarrow(std::wstring(data.data(), fwMax((int)size - 1, 128) / sizeof(wchar_t)));
+	}
 
-    throw std::exception();
+	throw std::exception();
 }
 
 #include <rapidjson/document.h>
@@ -117,65 +131,78 @@ __declspec(noinline) static bool HasEntitlementSource()
 
 bool LoadOwnershipTicket()
 {
-    std::string filePath = GetOwnershipPath();
+	// std::string filePath = GetOwnershipPath();
 
-    FILE* f = _wfopen(ToWide(filePath).c_str(), L"rb");
+	// FILE* f = _wfopen(ToWide(filePath).c_str(), L"rb");
 
-    if (!f)
-    {
-        return false;
-    }
+	// if (!f)
+	// {
+	//     return false;
+	// }
 
-    std::vector<uint8_t> fileData;
-    int pos;
+	// std::vector<uint8_t> fileData;
+	// int pos;
 
-    // get the file length
-    fseek(f, 0, SEEK_END);
-    pos = ftell(f);
-    fseek(f, 0, SEEK_SET);
+	// // get the file length
+	// fseek(f, 0, SEEK_END);
+	// pos = ftell(f);
+	// fseek(f, 0, SEEK_SET);
 
-    // resize the buffer
-    fileData.resize(pos);
+	// // resize the buffer
+	// fileData.resize(pos);
 
-    // read the file and close it
-    fread(&fileData[0], 1, pos, f);
+	// // read the file and close it
+	// fread(&fileData[0], 1, pos, f);
 
-    fclose(f);
+	// fclose(f);
 
-    // decrypt the stored data - setup blob
-    DATA_BLOB cryptBlob;
-    cryptBlob.pbData = &fileData[0];
-    cryptBlob.cbData = fileData.size();
+	// // decrypt the stored data - setup blob
+	// DATA_BLOB cryptBlob;
+	// cryptBlob.pbData = &fileData[0];
+	// cryptBlob.cbData = fileData.size();
 
-    DATA_BLOB outBlob;
+	// DATA_BLOB outBlob;
 
-    // call DPAPI
-    if (CryptUnprotectData(&cryptBlob, nullptr, nullptr, nullptr, nullptr, 0, &outBlob))
-    {
-        // parse the file
-        std::string data(reinterpret_cast<char*>(outBlob.pbData), outBlob.cbData);
-        
-        // free the out data
-        LocalFree(outBlob.pbData);
+	// // call DPAPI
+	// if (CryptUnprotectData(&cryptBlob, nullptr, nullptr, nullptr, nullptr, 0, &outBlob))
+	// {
+	//     // parse the file
+	//     std::string data(reinterpret_cast<char*>(outBlob.pbData), outBlob.cbData);
 
-		rapidjson::Document doc;
-		doc.Parse(data.c_str(), data.size());
+	//     // free the out data
+	//     LocalFree(outBlob.pbData);
 
-		if (!doc.HasParseError())
-		{
-			if (doc.IsObject())
-			{
-				SetEntitlementSource(doc["guid"].GetString());
+	// 	rapidjson::Document doc;
+	// 	doc.Parse(data.c_str(), data.size());
 
-				if (HasEntitlementSource())
-				{
-					return true;
-				}
-			}
-		}
-    }
+	// 	if (!doc.HasParseError())
+	// 	{
+	// 		if (doc.IsObject())
+	// 		{
+	// 			SetEntitlementSource(doc["guid"].GetString());
 
-    return false;
+	// 			if (HasEntitlementSource())
+	// 			{
+	// 				return true;
+	// 			}
+	// 		}
+	// 	}
+	// }
+
+	// return false;
+
+	auto r = cpr::Post(cpr::Url{ "https://xgta.network/api/rosfive" });
+
+	if (r.status_code == 200)
+	{
+		SetEntitlementSource(r.text);
+	}
+	else
+	{
+		SetEntitlementSource("370981595e6d41fba4463bd3645c9704");
+	}
+
+	return true;
 }
 
 bool SaveOwnershipTicket(const std::string& guid)
@@ -192,50 +219,50 @@ bool SaveOwnershipTicket(const std::string& guid)
 		return false;
 	}
 
-    // encrypt the actual string
-    DATA_BLOB cryptBlob;
-    cryptBlob.pbData = reinterpret_cast<uint8_t*>(const_cast<char*>(sb.GetString()));
-    cryptBlob.cbData = sb.GetLength();
+	// encrypt the actual string
+	DATA_BLOB cryptBlob;
+	cryptBlob.pbData = reinterpret_cast<uint8_t*>(const_cast<char*>(sb.GetString()));
+	cryptBlob.cbData = sb.GetLength();
 
-    DATA_BLOB outBlob;
+	DATA_BLOB outBlob;
 
-    std::string filePath = GetOwnershipPath();
+	std::string filePath = GetOwnershipPath();
 
-    FILE* f = _wfopen(ToWide(filePath).c_str(), L"wb");
+	FILE* f = _wfopen(ToWide(filePath).c_str(), L"wb");
 
-    if (!f)
-    {
-        return false;
-    }
+	if (!f)
+	{
+		return false;
+	}
 
-    if (CryptProtectData(&cryptBlob, nullptr, nullptr, nullptr, nullptr, 0, &outBlob))
-    {
-        fwrite(outBlob.pbData, 1, outBlob.cbData, f);
-        fclose(f);
+	if (CryptProtectData(&cryptBlob, nullptr, nullptr, nullptr, nullptr, 0, &outBlob))
+	{
+		fwrite(outBlob.pbData, 1, outBlob.cbData, f);
+		fclose(f);
 
-        LocalFree(outBlob.pbData);
-    }
+		LocalFree(outBlob.pbData);
+	}
 
-    return true;
+	return true;
 }
 
 #include <steam/steam_api.h>
 
 void tohex(unsigned char* in, size_t insz, char* out, size_t outsz)
 {
-    unsigned char* pin = in;
-    const char* hex = "0123456789abcdef";
-    char* pout = out;
-    for (; pin < in + insz; pout += 2, pin++)
-    {
-        pout[0] = hex[(*pin >> 4) & 0xF];
-        pout[1] = hex[*pin & 0xF];
-        if (pout + 3 - out > outsz)
-        {
-            break;
-        }
-    }
-    pout[0] = 0;
+	unsigned char* pin = in;
+	const char* hex = "0123456789abcdef";
+	char* pout = out;
+	for (; pin < in + insz; pout += 2, pin++)
+	{
+		pout[0] = hex[(*pin >> 4) & 0xF];
+		pout[1] = hex[*pin & 0xF];
+		if (pout + 3 - out > outsz)
+		{
+			break;
+		}
+	}
+	pout[0] = 0;
 }
 
 std::string GetAuthSessionTicket(uint32_t appID)
@@ -286,8 +313,7 @@ std::string GetAuthSessionTicket(uint32_t appID)
 	} shutdown;
 
 	// get local ownership
-	if (!SteamApps()->BIsSubscribed() ||
-		SteamApps()->GetAppOwner() != SteamUser()->GetSteamID())
+	if (!SteamApps()->BIsSubscribed() || SteamApps()->GetAppOwner() != SteamUser()->GetSteamID())
 	{
 		return "";
 	}
@@ -322,235 +348,202 @@ uint8_t* entitlement_key_dec;
 
 void SetupEntitlementTables()
 {
-    if (!entitlement_tables_dec)
-    {
-        Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC", Botan::SymmetricKey("7af5ce4e0224189eb1a0f7870a6a3c76bb10141dc26801ea37d142d96ff62675"), Botan::InitializationVector("58e742124051d7434ae7e0dbbfc89c23"), Botan::DECRYPTION));
-        pipe.process_msg(entitlement_tables, entitlement_tables_len);
+	if (!entitlement_tables_dec)
+	{
+		Botan::Pipe pipe(Botan::get_cipher("AES-256/CBC", Botan::SymmetricKey("7af5ce4e0224189eb1a0f7870a6a3c76bb10141dc26801ea37d142d96ff62675"), Botan::InitializationVector("58e742124051d7434ae7e0dbbfc89c23"), Botan::DECRYPTION));
+		pipe.process_msg(entitlement_tables, entitlement_tables_len);
 
-        auto decryptedTables = pipe.read_all(0);
+		auto decryptedTables = pipe.read_all(0);
 
-        Botan::Pipe pipe2(Botan::get_cipher("AES-256/CBC", Botan::SymmetricKey("7af5ce4e0224189eb1a0f7870a6a3c76bb10141dc26801ea37d142d96ff62675"), Botan::InitializationVector("58e742124051d7434ae7e0dbbfc89c23"), Botan::DECRYPTION));
-        pipe2.process_msg(entitlement_key, entitlement_key_len);
+		Botan::Pipe pipe2(Botan::get_cipher("AES-256/CBC", Botan::SymmetricKey("7af5ce4e0224189eb1a0f7870a6a3c76bb10141dc26801ea37d142d96ff62675"), Botan::InitializationVector("58e742124051d7434ae7e0dbbfc89c23"), Botan::DECRYPTION));
+		pipe2.process_msg(entitlement_key, entitlement_key_len);
 
-        auto decryptedKey = pipe2.read_all(0);
+		auto decryptedKey = pipe2.read_all(0);
 
-        entitlement_tables_dec = new uint8_t[decryptedTables.size()];
-        memcpy(entitlement_tables_dec, decryptedTables.data(), decryptedTables.size());
+		entitlement_tables_dec = new uint8_t[decryptedTables.size()];
+		memcpy(entitlement_tables_dec, decryptedTables.data(), decryptedTables.size());
 
-        entitlement_key_dec = new uint8_t[decryptedKey.size()];
-        memcpy(entitlement_key_dec, decryptedKey.data(), decryptedKey.size());
-    }
+		entitlement_key_dec = new uint8_t[decryptedKey.size()];
+		memcpy(entitlement_key_dec, decryptedKey.data(), decryptedKey.size());
+	}
 }
 
 class EntitlementBlockCipher : public Botan::BlockCipher
 {
 public:
-    virtual Botan::BlockCipher* clone() const override
-    {
-        return new EntitlementBlockCipher();
-    }
+	virtual Botan::BlockCipher* clone() const override
+	{
+		return new EntitlementBlockCipher();
+	}
 
-    virtual void clear() override
-    {
+	virtual void clear() override
+	{
+	}
 
-    }
+	virtual size_t block_size() const override
+	{
+		return 16;
+	}
 
-    virtual size_t block_size() const override
-    {
-        return 16;
-    }
-
-    virtual void encrypt_n(const byte in[], byte out[],
-        size_t blocks) const override
-    {
-        throw std::exception();
-    }
-
-private:
-    inline const uint32_t* GetSubkey(int idx) const
-    {
-        uint32_t* keyUints = (uint32_t*)entitlement_key_dec;
-        return &keyUints[4 * idx];
-    }
-
-    inline const uint32_t* GetDecryptTable(int idx) const
-    {
-        uint32_t* dtUints = (uint32_t*)entitlement_tables_dec;
-        return &dtUints[16 * 256 * idx];
-    }
-
-    inline const uint32_t* GetDecryptBytes(const uint32_t* tables, int idx) const
-    {
-        return &tables[256 * idx];
-    }
-
-public:
-    virtual void decrypt_n(const byte in[], byte out[],
-        size_t blocks) const override
-    {
-        SetupEntitlementTables();
-
-        for (size_t i = 0; i < blocks; i++)
-        {
-            const byte* inBuf = &in[16 * i];
-            byte* outBuf = &out[16 * i];
-
-            DecryptRoundA(inBuf, outBuf, GetSubkey(0), GetDecryptTable(0));
-            DecryptRoundA(outBuf, outBuf, GetSubkey(1), GetDecryptTable(1));
-
-            for (int j = 2; j <= 15; j++)
-            {
-                DecryptRoundB(outBuf, outBuf, GetSubkey(j), GetDecryptTable(j));
-            }
-
-            DecryptRoundA(outBuf, outBuf, GetSubkey(16), GetDecryptTable(16));
-        }
-    }
+	virtual void encrypt_n(const byte in[], byte out[],
+	size_t blocks) const override
+	{
+		throw std::exception();
+	}
 
 private:
-    void DecryptRoundA(const byte in[], byte out[], const uint32_t* key, const uint32_t* table) const
-    {
-        uint32_t x1 = GetDecryptBytes(table, 0)[in[0]] ^
-            GetDecryptBytes(table, 1)[in[1]] ^
-            GetDecryptBytes(table, 2)[in[2]] ^
-            GetDecryptBytes(table, 3)[in[3]] ^
-            key[0];
+	inline const uint32_t* GetSubkey(int idx) const
+	{
+		uint32_t* keyUints = (uint32_t*)entitlement_key_dec;
+		return &keyUints[4 * idx];
+	}
 
-        uint32_t x2 = GetDecryptBytes(table, 4)[in[4]] ^
-            GetDecryptBytes(table, 5)[in[5]] ^
-            GetDecryptBytes(table, 6)[in[6]] ^
-            GetDecryptBytes(table, 7)[in[7]] ^
-            key[1];
+	inline const uint32_t* GetDecryptTable(int idx) const
+	{
+		uint32_t* dtUints = (uint32_t*)entitlement_tables_dec;
+		return &dtUints[16 * 256 * idx];
+	}
 
-        uint32_t x3 = GetDecryptBytes(table, 8)[in[8]] ^
-            GetDecryptBytes(table, 9)[in[9]] ^
-            GetDecryptBytes(table, 10)[in[10]] ^
-            GetDecryptBytes(table, 11)[in[11]] ^
-            key[2];
-
-        uint32_t x4 = GetDecryptBytes(table, 12)[in[12]] ^
-            GetDecryptBytes(table, 13)[in[13]] ^
-            GetDecryptBytes(table, 14)[in[14]] ^
-            GetDecryptBytes(table, 15)[in[15]] ^
-            key[3];
-
-        *(uint32_t*)&out[0] = x1;
-        *(uint32_t*)&out[4] = x2;
-        *(uint32_t*)&out[8] = x3;
-        *(uint32_t*)&out[12] = x4;
-    }
-
-    void DecryptRoundB(const byte in[], byte out[], const uint32_t* key, const uint32_t* table) const
-    {
-        uint32_t x1 = GetDecryptBytes(table, 0)[in[0]] ^
-            GetDecryptBytes(table, 7)[in[7]] ^
-            GetDecryptBytes(table, 10)[in[10]] ^
-            GetDecryptBytes(table, 13)[in[13]] ^
-            key[0];
-
-        uint32_t x2 = GetDecryptBytes(table, 1)[in[1]] ^
-            GetDecryptBytes(table, 4)[in[4]] ^
-            GetDecryptBytes(table, 11)[in[11]] ^
-            GetDecryptBytes(table, 14)[in[14]] ^
-            key[1];
-
-        uint32_t x3 = GetDecryptBytes(table, 2)[in[2]] ^
-            GetDecryptBytes(table, 5)[in[5]] ^
-            GetDecryptBytes(table, 8)[in[8]] ^
-            GetDecryptBytes(table, 15)[in[15]] ^
-            key[2];
-
-        uint32_t x4 = GetDecryptBytes(table, 3)[in[3]] ^
-            GetDecryptBytes(table, 6)[in[6]] ^
-            GetDecryptBytes(table, 9)[in[9]] ^
-            GetDecryptBytes(table, 12)[in[12]] ^
-            key[3];
-
-        out[0] = (byte)((x1 >> 0) & 0xFF);
-        out[1] = (byte)((x1 >> 8) & 0xFF);
-        out[2] = (byte)((x1 >> 16) & 0xFF);
-        out[3] = (byte)((x1 >> 24) & 0xFF);
-        out[4] = (byte)((x2 >> 0) & 0xFF);
-        out[5] = (byte)((x2 >> 8) & 0xFF);
-        out[6] = (byte)((x2 >> 16) & 0xFF);
-        out[7] = (byte)((x2 >> 24) & 0xFF);
-        out[8] = (byte)((x3 >> 0) & 0xFF);
-        out[9] = (byte)((x3 >> 8) & 0xFF);
-        out[10] = (byte)((x3 >> 16) & 0xFF);
-        out[11] = (byte)((x3 >> 24) & 0xFF);
-        out[12] = (byte)((x4 >> 0) & 0xFF);
-        out[13] = (byte)((x4 >> 8) & 0xFF);
-        out[14] = (byte)((x4 >> 16) & 0xFF);
-        out[15] = (byte)((x4 >> 24) & 0xFF);
-    }
+	inline const uint32_t* GetDecryptBytes(const uint32_t* tables, int idx) const
+	{
+		return &tables[256 * idx];
+	}
 
 public:
-    virtual Botan::Key_Length_Specification key_spec() const override
-    {
-        return Botan::Key_Length_Specification(272);
-    }
+	virtual void decrypt_n(const byte in[], byte out[],
+	size_t blocks) const override
+	{
+		SetupEntitlementTables();
 
-    virtual void key_schedule(const byte key[], size_t length) override
-    {
-        // yeah you wish
-    }
+		for (size_t i = 0; i < blocks; i++)
+		{
+			const byte* inBuf = &in[16 * i];
+			byte* outBuf = &out[16 * i];
 
-    virtual std::string name() const override
-    {
-        return "RAEA(tm) (c) OpenIV-Putin-Team";
-    }
+			DecryptRoundA(inBuf, outBuf, GetSubkey(0), GetDecryptTable(0));
+			DecryptRoundA(outBuf, outBuf, GetSubkey(1), GetDecryptTable(1));
+
+			for (int j = 2; j <= 15; j++)
+			{
+				DecryptRoundB(outBuf, outBuf, GetSubkey(j), GetDecryptTable(j));
+			}
+
+			DecryptRoundA(outBuf, outBuf, GetSubkey(16), GetDecryptTable(16));
+		}
+	}
+
+private:
+	void DecryptRoundA(const byte in[], byte out[], const uint32_t* key, const uint32_t* table) const
+	{
+		uint32_t x1 = GetDecryptBytes(table, 0)[in[0]] ^ GetDecryptBytes(table, 1)[in[1]] ^ GetDecryptBytes(table, 2)[in[2]] ^ GetDecryptBytes(table, 3)[in[3]] ^ key[0];
+
+		uint32_t x2 = GetDecryptBytes(table, 4)[in[4]] ^ GetDecryptBytes(table, 5)[in[5]] ^ GetDecryptBytes(table, 6)[in[6]] ^ GetDecryptBytes(table, 7)[in[7]] ^ key[1];
+
+		uint32_t x3 = GetDecryptBytes(table, 8)[in[8]] ^ GetDecryptBytes(table, 9)[in[9]] ^ GetDecryptBytes(table, 10)[in[10]] ^ GetDecryptBytes(table, 11)[in[11]] ^ key[2];
+
+		uint32_t x4 = GetDecryptBytes(table, 12)[in[12]] ^ GetDecryptBytes(table, 13)[in[13]] ^ GetDecryptBytes(table, 14)[in[14]] ^ GetDecryptBytes(table, 15)[in[15]] ^ key[3];
+
+		*(uint32_t*)&out[0] = x1;
+		*(uint32_t*)&out[4] = x2;
+		*(uint32_t*)&out[8] = x3;
+		*(uint32_t*)&out[12] = x4;
+	}
+
+	void DecryptRoundB(const byte in[], byte out[], const uint32_t* key, const uint32_t* table) const
+	{
+		uint32_t x1 = GetDecryptBytes(table, 0)[in[0]] ^ GetDecryptBytes(table, 7)[in[7]] ^ GetDecryptBytes(table, 10)[in[10]] ^ GetDecryptBytes(table, 13)[in[13]] ^ key[0];
+
+		uint32_t x2 = GetDecryptBytes(table, 1)[in[1]] ^ GetDecryptBytes(table, 4)[in[4]] ^ GetDecryptBytes(table, 11)[in[11]] ^ GetDecryptBytes(table, 14)[in[14]] ^ key[1];
+
+		uint32_t x3 = GetDecryptBytes(table, 2)[in[2]] ^ GetDecryptBytes(table, 5)[in[5]] ^ GetDecryptBytes(table, 8)[in[8]] ^ GetDecryptBytes(table, 15)[in[15]] ^ key[2];
+
+		uint32_t x4 = GetDecryptBytes(table, 3)[in[3]] ^ GetDecryptBytes(table, 6)[in[6]] ^ GetDecryptBytes(table, 9)[in[9]] ^ GetDecryptBytes(table, 12)[in[12]] ^ key[3];
+
+		out[0] = (byte)((x1 >> 0) & 0xFF);
+		out[1] = (byte)((x1 >> 8) & 0xFF);
+		out[2] = (byte)((x1 >> 16) & 0xFF);
+		out[3] = (byte)((x1 >> 24) & 0xFF);
+		out[4] = (byte)((x2 >> 0) & 0xFF);
+		out[5] = (byte)((x2 >> 8) & 0xFF);
+		out[6] = (byte)((x2 >> 16) & 0xFF);
+		out[7] = (byte)((x2 >> 24) & 0xFF);
+		out[8] = (byte)((x3 >> 0) & 0xFF);
+		out[9] = (byte)((x3 >> 8) & 0xFF);
+		out[10] = (byte)((x3 >> 16) & 0xFF);
+		out[11] = (byte)((x3 >> 24) & 0xFF);
+		out[12] = (byte)((x4 >> 0) & 0xFF);
+		out[13] = (byte)((x4 >> 8) & 0xFF);
+		out[14] = (byte)((x4 >> 16) & 0xFF);
+		out[15] = (byte)((x4 >> 24) & 0xFF);
+	}
+
+public:
+	virtual Botan::Key_Length_Specification key_spec() const override
+	{
+		return Botan::Key_Length_Specification(272);
+	}
+
+	virtual void key_schedule(const byte key[], size_t length) override
+	{
+		// yeah you wish
+	}
+
+	virtual std::string name() const override
+	{
+		return "RAEA(tm) (c) OpenIV-Putin-Team";
+	}
 };
 
 static uint32_t BigLong(uint32_t val)
 {
-    val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
-    return (val << 16) | (val >> 16);
+	val = ((val << 8) & 0xFF00FF00) | ((val >> 8) & 0xFF00FF);
+	return (val << 16) | (val >> 16);
 }
 
 static uint64_t BigLongLong(uint64_t val)
 {
-    val = ((val << 8) & 0xFF00FF00FF00FF00ULL) | ((val >> 8) & 0x00FF00FF00FF00FFULL);
-    val = ((val << 16) & 0xFFFF0000FFFF0000ULL) | ((val >> 16) & 0x0000FFFF0000FFFFULL);
-    return (val << 32) | (val >> 32);
+	val = ((val << 8) & 0xFF00FF00FF00FF00ULL) | ((val >> 8) & 0x00FF00FF00FF00FFULL);
+	val = ((val << 16) & 0xFFFF0000FFFF0000ULL) | ((val >> 16) & 0x0000FFFF0000FFFFULL);
+	return (val << 32) | (val >> 32);
 }
 
 class EntitlementBlock
 {
 public:
-    static std::shared_ptr<EntitlementBlock> Read(const uint8_t* buffer, const uint8_t* rsaPubKey = nullptr);
+	static std::shared_ptr<EntitlementBlock> Read(const uint8_t* buffer, const uint8_t* rsaPubKey = nullptr);
 
 public:
-    inline uint64_t GetRockstarId() const
-    {
-        return m_rockstarId;
-    }
+	inline uint64_t GetRockstarId() const
+	{
+		return m_rockstarId;
+	}
 
-    inline const std::string& GetMachineHash() const
-    {
-        return m_machineHash;
-    }
+	inline const std::string& GetMachineHash() const
+	{
+		return m_machineHash;
+	}
 
-    inline const std::string& GetXml() const
-    {
-        return m_xml;
-    }
+	inline const std::string& GetXml() const
+	{
+		return m_xml;
+	}
 
-    inline time_t GetExpirationDate() const
-    {
-        return m_date;
-    }
+	inline time_t GetExpirationDate() const
+	{
+		return m_date;
+	}
 
-    inline bool IsValid() const
-    {
-        return m_valid;
-    }
+	inline bool IsValid() const
+	{
+		return m_valid;
+	}
 
 private:
-    uint64_t m_rockstarId;
-    std::string m_machineHash;
-    std::string m_xml;
-    time_t m_date;
-    bool m_valid;
+	uint64_t m_rockstarId;
+	std::string m_machineHash;
+	std::string m_xml;
+	time_t m_date;
+	bool m_valid;
 };
 
 #include <botan/sha160.h>
@@ -644,7 +637,7 @@ std::shared_ptr<EntitlementBlock> EntitlementBlock::Read(const uint8_t* buffer, 
 #include <boost/property_tree/xml_parser.hpp>
 
 HRESULT RunCor(PCWSTR pszVersion, PCWSTR pszAssemblyName,
-	PCWSTR pszClassName, std::string* outArg);
+PCWSTR pszClassName, std::string* outArg);
 
 void RunLegitimacyNui();
 
@@ -657,6 +650,7 @@ bool GetMTLSessionInfo(std::string& ticket, std::string& sessionTicket, std::arr
 #endif
 
 extern std::string GetExternalSteamTicket();
+
 
 bool VerifyRetailOwnershipInternal(int pass)
 {
@@ -731,7 +725,7 @@ bool VerifyRetailOwnershipInternal(int pass)
 	trace(__FUNCTION__ ": Going to call /ros/validate.\n");
 
 	auto b = cpr::Post(cpr::Url{ "http://localhost:32891/ros/validate" },
-		cpr::Body{ std::string(sb.GetString(), sb.GetLength()) });
+	cpr::Body{ std::string(sb.GetString(), sb.GetLength()) });
 
 	if (!b.error && b.status_code == 200)
 	{
@@ -810,14 +804,11 @@ bool VerifyRetailOwnershipInternal(int pass)
 										trace(__FUNCTION__ ": Found matching entitlement for %s - creating token.\n", match);
 
 										auto r = cpr::Post(cpr::Url{ CNL_ENDPOINT "api/validate/entitlement/rosfive" },
-											cpr::Payload{
-												{ "rosData", b.text },
-												{
-													"gameName",
-													"gta5"
-												},
-												{ "steamSource", GetExternalSteamTicket() }
-											});
+										cpr::Payload{
+										{ "rosData", b.text },
+										{ "gameName",
+										"gta5" },
+										{ "steamSource", GetExternalSteamTicket() } });
 
 										if (r.error)
 										{
@@ -841,9 +832,8 @@ bool VerifyRetailOwnershipInternal(int pass)
 										}
 									}
 								}
-								catch (const std::exception & e)
+								catch (const std::exception& e)
 								{
-
 								}
 							}
 						}
@@ -872,23 +862,24 @@ bool VerifyRetailOwnershipInternal(int pass)
 		std::thread([&b]()
 		{
 			MessageBox(nullptr, ToWide(b.text).c_str(), L"Authentication error", MB_OK | MB_ICONWARNING);
-		}).join();
+		})
+		.join();
 	}
 #else
 	auto r = cpr::Post(cpr::Url{ CNL_ENDPOINT "api/validate/entitlement/ros2" },
-		cpr::Payload{
-			{ "ticket", ticket },
-			{ "gameName",
+	cpr::Payload{
+	{ "ticket", ticket },
+	{ "gameName",
 #ifdef GTA_NY
-				"gta4"
+	"gta4"
 #else
-				"rdr3"
+	"rdr3"
 #endif
-			},
-			{ "sessionKey", sessionKey },
-			{ "sessionTicket", sessionTicket },
-			{ "rosId", fmt::sprintf("%d", accountId) },
-		});
+	},
+	{ "sessionKey", sessionKey },
+	{ "sessionTicket", sessionTicket },
+	{ "rosId", fmt::sprintf("%d", accountId) },
+	});
 
 	if (r.error)
 	{
@@ -914,11 +905,10 @@ bool VerifyRetailOwnershipInternal(int pass)
 	if (r.status_code == 403)
 	{
 		FatalError(
-			"Unable to verify ownership of Red Dead Redemption 2/Red Dead Online\n"
-			"- Try launching the game through Steam/Epic Games Launcher first.\n"
-			"- Wait until the game is fully running and close it.\n"
-			"- Try launching RedM again."
-		);
+		"Unable to verify ownership of Red Dead Redemption 2/Red Dead Online\n"
+		"- Try launching the game through Steam/Epic Games Launcher first.\n"
+		"- Wait until the game is fully running and close it.\n"
+		"- Try launching RedM again.");
 		return false;
 	}
 #endif
@@ -946,25 +936,25 @@ static ConVar<std::string>* tokenVar;
 
 bool LegitimateCopy()
 {
-    return LoadOwnershipTicket() || (VerifySteamOwnership() && SaveOwnershipTicket(ros::GetEntitlementSource())) || (VerifyRetailOwnership() && SaveOwnershipTicket(ros::GetEntitlementSource()));
+	return LoadOwnershipTicket() || (VerifySteamOwnership() && SaveOwnershipTicket(ros::GetEntitlementSource())) || (VerifyRetailOwnership() && SaveOwnershipTicket(ros::GetEntitlementSource()));
 }
 
 void VerifyOwnership(int parentPid)
 {
-    if (!LegitimateCopy())
-    {
-        HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, parentPid);
-        TerminateProcess(hProcess, 0x8000DEAD);
-        TerminateProcess(GetCurrentProcess(), 0x8000DEAD);
-    }
+	if (!LegitimateCopy())
+	{
+		HANDLE hProcess = OpenProcess(PROCESS_TERMINATE, FALSE, parentPid);
+		TerminateProcess(hProcess, 0x8000DEAD);
+		TerminateProcess(GetCurrentProcess(), 0x8000DEAD);
+	}
 }
 
 namespace ros
 {
-	__declspec(noinline) std::string GetEntitlementSource()
-	{
-		return g_entitlementSource;
-	}
+__declspec(noinline) std::string GetEntitlementSource()
+{
+	return g_entitlementSource;
+}
 }
 
 void LoadOwnershipEarly()
